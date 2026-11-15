@@ -82,6 +82,17 @@ rm ~/Library/LaunchAgents/co.roman.notes-sync.plist ~/bin/notes-sync.sh
 - **Key security**: the private key (`~/.ssh/notes_git`) never leaves the Mac; the server
   account should be `git-shell`-locked and key-only.
 
+## Failure taxonomy
+
+| # | Name | What happens | What you do |
+|---|---|---|---|
+| 1 | **Content conflict** | Two peers edit the same lines within one sync window; the second integrator finds `<<<<<<<`/`>>>>>>>` markers *inside the note* + a notification | Reopen the note, keep the content you want, delete the three marker lines, save — auto-push follows within one tick |
+| 2 | **Push race** | A clean merge loses its push to a peer that pushed mid-tick | Nothing; the next tick merges again (may become #1) |
+| 3 | **Stale editor buffer** | The editor (FSNotes/Markor) still shows the pre-sync copy, so markers or new content look invisible | Close and reopen the note after any sync notification — the notifications say so |
+| 4 | **Marker poison** | A file *with* markers gets committed and pushed, replicating to every peer. Seen from editor-integrated git (FSNotes background git — disabled in this setup) and from a space-in-filename bug in the marker detector (fixed: null-delimited `-z` iteration) | The hourly conflict scan flags it; remove the markers, commit — history keeps every side |
+| 5 | **Corrupt object store (Android)** | Interrupted fetch on FUSE shared storage left an empty object file; every later fetch fails ("did not send all necessary objects") | Auto-cleaned by the script; the git DB now lives on ext4 (`~/.notes-git`), so this is structural history |
+| 6 | **Hostile network** | Port 22 blocked or DNS broken (public Wi-Fi, some carriers); fetch fails | The notification carries the actual ssh reason; self-heals on the next good network; Tailscale is the fallback path |
+
 ## Peers
 
 - **Mac**: FSNotes (storage = `~/Notes`, Git pane: hourly snapshots + Commit & Push menu)

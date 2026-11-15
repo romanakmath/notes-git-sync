@@ -15,9 +15,9 @@ cd "$NOTES_DIR" || exit 0
 # 1. A merge left waiting for human resolution? Finish it once markers are gone.
 if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
   unresolved=""
-  for f in $(git diff --name-only --diff-filter=U); do
+  while IFS= read -r -d '' f; do
     grep -qE '^(<<<<<<<|>>>>>>>) ' "$f" 2>/dev/null && unresolved="$unresolved $f"
-  done
+  done < <(git diff --name-only --diff-filter=U -z)
   if [ -n "$unresolved" ]; then
     say "conflict markers still in:$unresolved — reopen the note in FSNotes, remove markers"
     exit 0
