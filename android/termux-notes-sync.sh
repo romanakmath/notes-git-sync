@@ -33,6 +33,10 @@ if ! git diff --cached --quiet; then
   git commit -q -m "autosync (android) $(date '+%F %T')"
 fi
 
+# guard: interrupted fetches can leave empty object files (seen on FUSE shared
+# storage); they wedge every later fetch with "did not send all necessary objects"
+find "$(git rev-parse --git-dir)/objects" -type f -empty -delete 2>/dev/null
+
 # 3. Integrate remote: merge (fast-forward when clean, markers when not)
 if ! git fetch origin -q 2>/tmp/notes-fetch.err; then
   reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70)

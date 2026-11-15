@@ -30,7 +30,16 @@ ssh-keyscan -t ed25519,rsa SERVER_HOST >> ~/.ssh/known_hosts
 git config --global user.name  "your name"
 git config --global user.email "you@example.com"
 termux-setup-storage                       # tap Allow — grants shared storage
-git clone ssh://git@SERVER_HOST/home/git/repos/notes.git ~/storage/shared/Notes
+# Clone, then relocate the git DB to Termux-internal (ext4) storage: notes stay
+# on shared storage (for Markor), while .git — the database fetch writes into —
+# lives on a real filesystem. Interrupted fetches on FUSE shared storage
+# otherwise leave EMPTY object files that wedge every future fetch
+# ("... did not send all necessary objects").
+git clone ssh://git@SERVER_HOST/home/git/repos/notes.git ~/vault-tmp
+mv ~/vault-tmp/.git ~/.notes-git
+git --git-dir=$HOME/.notes-git config core.worktree /storage/emulated/0/Notes
+mkdir -p ~/storage/shared/Notes && mv ~/vault-tmp/* ~/storage/shared/Notes/ && rmdir ~/vault-tmp
+echo "gitdir: /data/data/com.termux/files/home/.notes-git" > ~/storage/shared/Notes/.git
 git config --global --add safe.directory /storage/emulated/0/Notes   # FUSE uid quirk
 cd ~/storage/shared/Notes && git config core.fileMode false
 mkdir -p ~/bin && install -m 755 termux-notes-sync.sh ~/bin/notes-sync.sh
@@ -83,6 +92,7 @@ Markor → open folder → internal storage → `Notes` (`/storage/emulated/0/No
 | `fetch failed — no network?` | offline; retries next tick |
 | `STUCK: merge conflict` | same lines edited on two peers — open Termux, resolve `<<<<<<<` in the note, commit |
 | `push failed` | key rejected or network half-up |
+| `fetch failed: ... empty` / `did not send all necessary objects` | interrupted fetch left an empty object file — the sync script now auto-deletes these; manually: `find $(git rev-parse --git-dir)/objects -type f -empty -delete` |
 
 ## Remote administration (optional)
 
