@@ -38,9 +38,10 @@ fi
 find "$(git rev-parse --git-dir)/objects" -type f -empty -delete 2>/dev/null
 
 # 3. Integrate remote: merge (fast-forward when clean, markers when not)
-if ! git fetch origin -q 2>/tmp/notes-fetch.err; then
-  reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70)
-  notify "fetch failed: ${reason:-unknown — see /tmp/notes-fetch.err}"
+FETCH_ERR="${TMPDIR:-$HOME}/notes-fetch.err"
+if ! git fetch origin -q 2>"$FETCH_ERR"; then
+  reason=$(grep -m1 -E "ssh:|fatal:|Could not" "$FETCH_ERR" | cut -c1-70)
+  notify "fetch failed: ${reason:-unknown — see $FETCH_ERR}"
   exit 0
 fi
 if [ -n "$(git rev-list main..origin/main)" ]; then
