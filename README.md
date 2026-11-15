@@ -34,6 +34,25 @@ This repo contains the Mac-side background syncer:
 2. An SSH key authorized for that account: `~/.ssh/notes_git` on this Mac.
 3. FSNotes (or any editor) with its storage pointed at `~/Notes`.
 
+### Server hardening (once all peer keys are verified)
+
+```bash
+# on the server, as root:
+cat > /etc/ssh/sshd_config.d/99-harden.conf <<'EOF'
+PermitRootLogin prohibit-password
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
+sshd -t && systemctl reload ssh   # validate BEFORE reload
+```
+
+After this:
+- **root login: key only** — e.g. `ssh notesroot` (dedicated key + Host alias on the Mac)
+- **passwords: disabled for every user** (git@ peers already use keys — unaffected)
+- **lockout recovery:** the hosting panel's VNC console is out-of-band and ignores sshd;
+  the root password keeps working there
+- **back up the root key's private file** — losing it together with the Mac leaves only the console path
+
 ## Install
 
 ```bash
