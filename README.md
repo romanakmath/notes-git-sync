@@ -22,6 +22,7 @@ This repo contains the Mac-side background syncer:
 |---|---|
 | `bin/notes-sync.sh` | commit (if changes) → fetch → **merge** `origin/main` → push; conflicts surface as markers *inside the note* and auto-push once you remove them |
 | `launchd/co.roman.notes-sync.plist` | launchd agent template (cadence via `__INTERVAL__`) |
+| `bin/notes-conflict-scan.sh` + hourly plist | janitor: notification if conflict markers linger in any note |
 | `install.sh` | installs script + agent, `./install.sh [seconds]` (default 180) |
 | `android/` | Android peer: Termux sync script + setup runbook (`android/setup.md`) |
 
@@ -74,6 +75,10 @@ rm ~/Library/LaunchAgents/co.roman.notes-sync.plist ~/bin/notes-sync.sh
   (commit message literally "Merge conflict"), poisoning the remote for all peers. Keep
   only its manual *Commit & Push* menu action; this launchd loop is the single background
   writer.
+- **Leftover-marker guard**: an hourly scan (Mac launchd / Android cron) notifies if
+  `<<<<<<<` / `>>>>>>>` markers linger in any note — e.g. after a partial manual resolution
+  or a commit made while markers were present. Only those two line-starts are matched;
+  a bare `=======` line is a valid Markdown heading underline and is never flagged.
 - **Key security**: the private key (`~/.ssh/notes_git`) never leaves the Mac; the server
   account should be `git-shell`-locked and key-only.
 

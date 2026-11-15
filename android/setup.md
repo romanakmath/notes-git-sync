@@ -42,6 +42,10 @@ mkdir -p ~/bin && install -m 755 termux-notes-sync.sh ~/bin/notes-sync.sh
 # cron every 3 minutes (supervised by runit: sv up crond)
 ( crontab -l 2>/dev/null; echo "*/3 * * * * bash \$HOME/bin/notes-sync.sh" ) | crontab -
 
+# hourly guard against leftover conflict markers
+install -m 755 termux-notes-conflict-scan.sh ~/bin/notes-conflict-scan.sh
+( crontab -l 2>/dev/null; echo "0 * * * * bash \$HOME/bin/notes-conflict-scan.sh" ) | crontab -
+
 # home-screen button for Termux:Widget
 mkdir -p ~/.shortcuts
 printf '#!/data/data/com.termux/files/usr/bin/bash\nbash $HOME/bin/notes-sync.sh\n' \
