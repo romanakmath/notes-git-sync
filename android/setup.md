@@ -2,8 +2,9 @@
 
 No git-native notes app survives on current Android (GitJournal: dead since 2021,
 its niche never refilled). The phone therefore runs **plain git inside Termux** —
-the same commit → fetch → rebase → push loop as the Mac launchd agent — while any
-editor edits the plain `.md` files in shared storage.
+the same commit → fetch → **merge** → push loop as the Mac launchd agent — while any
+editor edits the plain `.md` files in shared storage. Conflicts appear as markers
+inside the note; remove them in Markor and the next tick auto-pushes.
 
 ## 0. The five apps (all from F-Droid — Play builds are deprecated & signature-incompatible)
 

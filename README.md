@@ -20,7 +20,7 @@ This repo contains the Mac-side background syncer:
 
 | File | Purpose |
 |---|---|
-| `bin/notes-sync.sh` | commit (if changes) → fetch → rebase onto `origin/main` → push |
+| `bin/notes-sync.sh` | commit (if changes) → fetch → **merge** `origin/main` → push; conflicts surface as markers *inside the note* and auto-push once you remove them |
 | `launchd/co.roman.notes-sync.plist` | launchd agent template (cadence via `__INTERVAL__`) |
 | `install.sh` | installs script + agent, `./install.sh [seconds]` (default 180) |
 | `android/` | Android peer: Termux sync script + setup runbook (`android/setup.md`) |
@@ -65,8 +65,15 @@ rm ~/Library/LaunchAgents/co.roman.notes-sync.plist ~/bin/notes-sync.sh
 - **Sleep**: launchd doesn't tick while the Mac sleeps; missed runs coalesce into one run on wake.
 - **Power**: a no-op tick costs ~0.1–0.5 s CPU and a few KB of SSH negotiation —
   at 3-minute cadence roughly 3–5 minutes of CPU *per day*, well under 1% battery.
-- **Merge conflicts**: when two peers edit the same lines, `git rebase` stops and the loop
-  exits to retry later — resolve the `<<<<<<<` markers in the note, commit, done.
+- **Merge strategy — never rebase**: on conflict the loop leaves `<<<<<<<` markers inside the
+  note itself and notifies you (macOS notification / Termux:API). Remove the markers, keep
+  the content you want — the next tick commits the resolution and pushes automatically.
+  No silent stuck states: a conflict is always visible in the note or in a notification.
+- **FSNotes users — important**: turn OFF FSNotes' own background git (scheduled snapshots
+  and auto-pull). On a merge conflict FSNotes commits the marker-laden file and pushes it
+  (commit message literally "Merge conflict"), poisoning the remote for all peers. Keep
+  only its manual *Commit & Push* menu action; this launchd loop is the single background
+  writer.
 - **Key security**: the private key (`~/.ssh/notes_git`) never leaves the Mac; the server
   account should be `git-shell`-locked and key-only.
 

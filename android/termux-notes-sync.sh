@@ -1,6 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# notes-sync — Android/Termux variant of the Mac launchd loop
-# Runs from cron (*/3) or the Termux:Widget "Sync-notes" shortcut.
+# notes-sync — Android/Termux variant (cron every 3 min, Termux:Widget shortcut)
+# Strategy: MERGE, never rebase. Conflicts surface as markers inside the note;
+# this script waits for the human to remove them (in Markor), then auto-pushes.
+# Notifications: Termux:API (needs the Termux:API app).
+
 NOTES_DIR="${NOTES_DIR:-$HOME/storage/shared/Notes}"
 GIT_KEY="${GIT_KEY:-$HOME/.ssh/notes_git}"
 export GIT_SSH_COMMAND="ssh -i $GIT_KEY -o IdentitiesOnly=yes -o BatchMode=yes"
@@ -8,18 +11,37 @@ export GIT_SSH_COMMAND="ssh -i $GIT_KEY -o IdentitiesOnly=yes -o BatchMode=yes"
 notify() { command -v termux-notification >/dev/null 2>&1 && termux-notification --title "Notes sync" --content "$1"; }
 
 cd "$NOTES_DIR" || exit 0
-changed=0
+
+# 1. A merge left waiting for human resolution? Finish it once markers are gone.
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  unresolved=""
+  for f in $(git diff --name-only --diff-filter=U); do
+    grep -qE '^(<<<<<<<|>>>>>>>) ' "$f" 2>/dev/null && unresolved="$unresolved $f"
+  done
+  if [ -n "$unresolved" ]; then
+    notify "conflict markers still in:$unresolved — remove them in Markor"
+    exit 0
+  fi
+  git add -A && git commit -q --no-edit && git push -q \
+    && notify "conflict resolved — synced $(date +%H:%M)"
+  exit 0
+fi
+
+# 2. Commit local changes
 git add -A
 if ! git diff --cached --quiet; then
-  git commit -q -m "autosync (android) $(date '+%F %T')" && changed=1
+  git commit -q -m "autosync (android) $(date '+%F %T')"
 fi
+
+# 3. Integrate remote: merge (fast-forward when clean, markers when not)
 if ! git fetch origin -q; then notify "fetch failed — no network?"; exit 0; fi
 if [ -n "$(git rev-list main..origin/main)" ]; then
-  git rebase origin/main -q || { git rebase --abort 2>/dev/null; notify "STUCK: merge conflict — open Termux"; exit 0; }
+  if ! git merge --no-edit origin/main >/dev/null 2>&1; then
+    notify "MERGE CONFLICT — open the marked note(s) in Markor, remove markers"
+    exit 0
+  fi
 fi
-if git push -q; then
-  [ "$changed" = 1 ] && notify "synced $(date +%H:%M)"
-else
-  notify "push failed — check key/network"
-fi
+
+# 4. Publish
+git push -q
 exit 0
