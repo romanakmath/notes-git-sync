@@ -93,6 +93,23 @@ rm ~/Library/LaunchAgents/co.roman.notes-sync.plist ~/bin/notes-sync.sh
 | 5 | **Corrupt object store (Android)** | Interrupted fetch on FUSE shared storage left an empty object file; every later fetch fails ("did not send all necessary objects") | Auto-cleaned by the script; the git DB now lives on ext4 (`~/.notes-git`), so this is structural history |
 | 6 | **Hostile network** | Port 22 blocked or DNS broken (public Wi-Fi, some carriers); fetch fails | The notification carries the actual ssh reason; self-heals on the next good network; Tailscale is the fallback path |
 
+### Network requirements
+
+- Sync is plain SSH (port 22) to the bare repo over the public internet — works identically on
+  home Wi-Fi, mobile data, and hotspots.
+- Rare blockers: networks or carriers that filter outbound port 22 or break DNS. The fetch-failure
+  notification carries the actual ssh/git reason, and sync self-heals on the next good network.
+- Fallback for hostile networks: Tailscale (sync via the server's tailnet address; also restores
+  remote administration of the phone from anywhere).
+
+### Testing the chain (2-minute drill)
+
+1. Edit the **same line** of one note on two devices within a 3-minute window.
+2. Expect the second integrator to get `<<<<<<<` markers in the note + a MERGE CONFLICT notification.
+3. Reopen the note in the editor, keep what you want, delete the three marker lines, save.
+4. Within one tick: "conflict resolved — synced"; the other device converges on its next tick.
+5. Edit *different* lines or notes on two devices → no conflict at all; git merges automatically.
+
 ## Peers
 
 - **Mac**: FSNotes (storage = `~/Notes`, Git pane: hourly snapshots + Commit & Push menu)
