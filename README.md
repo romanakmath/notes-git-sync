@@ -8,7 +8,7 @@ FSNotes Mac ──push/pull──┐
                          │
      bare remote (SSH) ◄─┼── push/pull ── FSNotes iOS (auto-pull)
                          │
-                         └── push/pull ── GitJournal Android
+                         └── push/pull ── Termux + Markor (Android)
 ```
 
 Notes stay plain `.md` files in `~/Notes`. The only transport is git (over SSH to a
@@ -23,6 +23,7 @@ This repo contains the Mac-side background syncer:
 | `bin/notes-sync.sh` | commit (if changes) → fetch → rebase onto `origin/main` → push |
 | `launchd/co.roman.notes-sync.plist` | launchd agent template (cadence via `__INTERVAL__`) |
 | `install.sh` | installs script + agent, `./install.sh [seconds]` (default 180) |
+| `android/` | Android peer: Termux sync script + setup runbook (`android/setup.md`) |
 
 ## Requirements (one-time)
 
@@ -73,4 +74,4 @@ rm ~/Library/LaunchAgents/co.roman.notes-sync.plist ~/bin/notes-sync.sh
 
 - **Mac**: FSNotes (storage = `~/Notes`, Git pane: hourly snapshots + Commit & Push menu)
 - **iPhone**: FSNotes iOS → Preferences → Git (clone same repo, auto-pull automation on)
-- **Android**: GitJournal → Custom repo, same URL, in-app generated SSH key
+- **Android**: Termux (plain git, cron every 3 min, status notifications) + Markor — see `android/setup.md`. GitJournal is dead (no release since 2021); no maintained git-native notes app exists on Android.
