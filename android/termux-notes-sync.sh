@@ -19,10 +19,11 @@ if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
     grep -qE '^(<<<<<<<|>>>>>>>) ' "$f" 2>/dev/null && unresolved="$unresolved $f"
   done
   if [ -n "$unresolved" ]; then
-    notify "conflict markers still in:$unresolved — remove them in Markor"
+    notify "conflict markers still in:$unresolved — close+reopen the note in Markor, remove markers"
     exit 0
   fi
-  git add -A && git commit -q --no-edit && git push -q \
+  git add -A && git commit -q --no-edit \
+    && (git push -q || notify "resolved but push failed — retrying next tick") \
     && notify "conflict resolved — synced $(date +%H:%M)"
   exit 0
 fi
@@ -46,11 +47,11 @@ if ! git fetch origin -q 2>"$FETCH_ERR"; then
 fi
 if [ -n "$(git rev-list main..origin/main)" ]; then
   if ! git merge --no-edit origin/main >/dev/null 2>&1; then
-    notify "MERGE CONFLICT — open the marked note(s) in Markor, remove markers"
+    notify "MERGE CONFLICT — close+reopen the note in Markor, remove <<<<<<< markers, save"
     exit 0
   fi
 fi
 
 # 4. Publish
-git push -q
+git push -q || notify "push failed — retrying next tick"
 exit 0

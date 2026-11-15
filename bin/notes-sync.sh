@@ -19,10 +19,11 @@ if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
     grep -qE '^(<<<<<<<|>>>>>>>) ' "$f" 2>/dev/null && unresolved="$unresolved $f"
   done
   if [ -n "$unresolved" ]; then
-    say "conflict markers still in:$unresolved — remove them, auto-push follows"
+    say "conflict markers still in:$unresolved — reopen the note in FSNotes, remove markers"
     exit 0
   fi
-  git add -A && git commit -q --no-edit && git push -q \
+  git add -A && git commit -q --no-edit \
+    && (git push -q || say "resolved but push failed — retrying next tick") \
     && say "conflict resolved — synced $(date +%H:%M)"
   exit 0
 fi
@@ -35,11 +36,11 @@ git diff --cached --quiet || git commit -q -m "autosync $(date '+%F %T')"
 git fetch origin -q 2>/tmp/notes-fetch.err || { reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70); say "fetch failed: ${reason:-see /tmp/notes-fetch.err}"; exit 0; }
 if [ -n "$(git rev-list main..origin/main)" ]; then
   if ! git merge --no-edit origin/main >/dev/null 2>&1; then
-    say "MERGE CONFLICT — open the marked note(s), remove markers; auto-push follows"
+    say "MERGE CONFLICT — reopen the note in FSNotes, remove <<<<<<< markers, save"
     exit 0
   fi
 fi
 
 # 4. Publish
-git push -q
+git push -q || say "push failed — retrying next tick"
 exit 0
