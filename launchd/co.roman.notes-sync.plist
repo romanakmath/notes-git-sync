@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>co.roman.notes-sync</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string><string>__HOME__/bin/notes-sync.sh</string>
+  </array>
+  <key>StartInterval</key><integer>__INTERVAL__</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardErrorPath</key><string>/tmp/notes-sync.err</string>
+</dict></plist>
