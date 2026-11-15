@@ -34,7 +34,11 @@ if ! git diff --cached --quiet; then
 fi
 
 # 3. Integrate remote: merge (fast-forward when clean, markers when not)
-if ! git fetch origin -q; then notify "fetch failed — no network?"; exit 0; fi
+if ! git fetch origin -q 2>/tmp/notes-fetch.err; then
+  reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70)
+  notify "fetch failed: ${reason:-unknown — see /tmp/notes-fetch.err}"
+  exit 0
+fi
 if [ -n "$(git rev-list main..origin/main)" ]; then
   if ! git merge --no-edit origin/main >/dev/null 2>&1; then
     notify "MERGE CONFLICT — open the marked note(s) in Markor, remove markers"

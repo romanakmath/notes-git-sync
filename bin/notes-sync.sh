@@ -32,7 +32,7 @@ git add -A
 git diff --cached --quiet || git commit -q -m "autosync $(date '+%F %T')"
 
 # 3. Integrate remote: merge (fast-forward when clean, markers when not)
-git fetch origin -q || { say "fetch failed — offline?"; exit 0; }
+git fetch origin -q 2>/tmp/notes-fetch.err || { reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70); say "fetch failed: ${reason:-see /tmp/notes-fetch.err}"; exit 0; }
 if [ -n "$(git rev-list main..origin/main)" ]; then
   if ! git merge --no-edit origin/main >/dev/null 2>&1; then
     say "MERGE CONFLICT — open the marked note(s), remove markers; auto-push follows"
