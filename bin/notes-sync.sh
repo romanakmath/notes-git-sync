@@ -4,11 +4,26 @@
 # this script waits for the human to remove them, then auto-commits and pushes.
 # Notifications: macOS notification center (osascript).
 
+# Notes sync – Mac variant: dual-path (public URL first, tailnet IP fallback)
 NOTES_DIR="${NOTES_DIR:-$HOME/Notes}"
 GIT_KEY="${GIT_KEY:-$HOME/.ssh/notes_git}"
+TAILNET_URL="${TAILNET_URL:-ssh://git@100.124.167.1/home/git/repos/notes.git}"
 export GIT_SSH_COMMAND="ssh -i $GIT_KEY -o IdentitiesOnly=yes -o BatchMode=yes"
 
 say() { osascript -e "display notification \"$1\" with title \"Notes sync\"" 2>/dev/null; }
+
+fetch_all() {
+  # primary: public hostname; fallback: tailnet IP (updates the same tracking ref)
+  git fetch origin -q 2>/tmp/notes-fetch.err && return 0
+  git fetch "$TAILNET_URL" +refs/heads/main:refs/remotes/origin/main -q 2>>/tmp/notes-fetch.err && return 0
+  return 1
+}
+
+push_all() {
+  git push -q && return 0
+  git push -q "$TAILNET_URL" main && return 0
+  return 1
+}
 
 cd "$NOTES_DIR" || exit 0
 
@@ -23,7 +38,7 @@ if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
     exit 0
   fi
   git add -A && git commit -q --no-edit \
-    && (git push -q || say "resolved but push failed — retrying next tick") \
+    && (push_all || say "resolved but push failed — retrying next tick") \
     && say "conflict resolved — synced $(date +%H:%M)"
   exit 0
 fi
@@ -33,7 +48,11 @@ git add -A
 git diff --cached --quiet || git commit -q -m "autosync $(date '+%F %T')"
 
 # 3. Integrate remote: merge (fast-forward when clean, markers when not)
-git fetch origin -q 2>/tmp/notes-fetch.err || { reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70); say "fetch failed: ${reason:-see /tmp/notes-fetch.err}"; exit 0; }
+if ! fetch_all; then
+  reason=$(grep -m1 -E "ssh:|fatal:|Could not" /tmp/notes-fetch.err | cut -c1-70)
+  say "fetch failed (public + tailnet): ${reason:-see /tmp/notes-fetch.err}"
+  exit 0
+fi
 if [ -n "$(git rev-list main..origin/main)" ]; then
   if ! git merge --no-edit origin/main >/dev/null 2>&1; then
     say "MERGE CONFLICT — reopen the note in FSNotes, remove <<<<<<< markers, save"
@@ -42,5 +61,5 @@ if [ -n "$(git rev-list main..origin/main)" ]; then
 fi
 
 # 4. Publish
-git push -q || say "push failed — retrying next tick"
+push_all || say "push failed — retrying next tick"
 exit 0
