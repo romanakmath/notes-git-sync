@@ -7,10 +7,19 @@
 # Notes sync – Mac variant: dual-path (public URL first, tailnet IP fallback)
 NOTES_DIR="${NOTES_DIR:-$HOME/Notes}"
 GIT_KEY="${GIT_KEY:-$HOME/.ssh/notes_git}"
-TAILNET_URL="${TAILNET_URL:-ssh://git@100.124.167.1/home/git/repos/notes.git}"
+# Private settings: env vars win; otherwise source ~/.config/notes-sync.conf
+# (never committed — copy from notes-sync.conf.example). No hardcoded default.
+NOTES_SYNC_CONF="${NOTES_SYNC_CONF:-$HOME/.config/notes-sync.conf}"
+[ -r "$NOTES_SYNC_CONF" ] && . "$NOTES_SYNC_CONF"
 export GIT_SSH_COMMAND="ssh -i $GIT_KEY -o IdentitiesOnly=yes -o BatchMode=yes"
 
 say() { osascript -e "display notification \"$1\" with title \"Notes sync\"" 2>/dev/null; }
+
+if [ -z "${TAILNET_URL:-}" ]; then
+  echo "notes-sync: TAILNET_URL is not set — put it in $NOTES_SYNC_CONF or the environment" >&2
+  say "TAILNET_URL missing — create ~/.config/notes-sync.conf"
+  exit 1
+fi
 
 fetch_all() {
   # primary: public hostname; fallback: tailnet IP (updates the same tracking ref)

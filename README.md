@@ -61,6 +61,20 @@ cd notes-git-sync
 ./install.sh 180        # sync every 3 minutes
 ```
 
+### Private settings (required)
+
+The sync scripts contain **no hardcoded server address**. Create your private
+config once (never committed — gitignored):
+
+```bash
+cp notes-sync.conf.example ~/.config/notes-sync.conf
+chmod 600 ~/.config/notes-sync.conf
+# edit it: set TAILNET_URL to your server's SSH URL
+```
+
+Environment variables (`TAILNET_URL`, `NOTES_DIR`, `GIT_KEY`) override the
+config file. Without `TAILNET_URL` the script refuses to run and notifies you.
+
 ## Change the cadence
 
 ```bash

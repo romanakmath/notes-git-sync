@@ -1,0 +1,10 @@
+# notes-sync private settings — copy to ~/.config/notes-sync.conf and chmod 600.
+# This file is NEVER committed (gitignored).
+
+# SSH URL of your private git server inside the tailnet (fallback fetch path).
+# No default — the script refuses to run without it.
+TAILNET_URL="ssh://git@YOUR-TAILNET-IP/home/git/repos/notes.git"
+
+# Optional overrides (defaults shown):
+# NOTES_DIR="$HOME/Notes"                     # Mac; Android/Termux: $HOME/storage/shared/Notes
+# GIT_KEY="$HOME/.ssh/notes_git"
